@@ -1,3 +1,4 @@
+<p-toast />
 <p-toolbar styleClass="mb-6">
   <ng-template #start>
     <p-button
@@ -145,6 +146,7 @@
       <div>
         <label for="imageUrl" class="block font-bold mb-3">Image URL</label>
         <input
+          #imageUrl
           type="text"
           pInputText
           id="imageUrl"
@@ -169,9 +171,11 @@
           autofocus
           fluid
         />
-        <small class="text-red-500" *ngIf="submitted && !product.name"
-          >Name is required.</small
-        >
+        @if(submitted && !product.name) {
+        <small class="text-red-500">Name is required.</small>
+        } @if(submitted && !product.name) {
+        <small class="text-red-500">Name is required.</small>
+        }
       </div>
       <div>
         <label for="description" class="block font-bold mb-3"

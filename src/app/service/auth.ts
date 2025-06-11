@@ -56,8 +56,6 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    console.log(this.getAuthUser);
-
     return (
       this.getAuthUser !== null && Object.keys(this.getAuthUser).length > 0
     );

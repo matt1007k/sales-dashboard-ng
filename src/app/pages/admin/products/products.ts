@@ -1,11 +1,14 @@
 import {
+  afterNextRender,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   OnInit,
   resource,
   signal,
+  viewChild,
   ViewChild,
 } from '@angular/core';
 import {
@@ -74,7 +77,6 @@ interface ExportColumn {
     IconFieldModule,
     ConfirmDialogModule,
     AutoComplete,
-    JsonPipe,
     ChipModule,
   ],
   providers: [MessageService, ProductService, ConfirmationService],
@@ -112,12 +114,14 @@ export class Products implements OnInit {
   categories = signal<Category[]>([]);
 
   searchProvider(event: AutoCompleteCompleteEvent) {
+    if (event.query.length < 3) return;
     this.providerService.getProvidersSimple(event.query).subscribe((data) => {
       this.providers.set(data.data);
     });
   }
 
   searchCategories(event: AutoCompleteCompleteEvent) {
+    if (event.query.length < 3) return;
     this.categoryService.getCategories(event.query).subscribe((data) => {
       this.categories.set(data.data);
     });

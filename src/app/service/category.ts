@@ -14,7 +14,7 @@ export class CategoryService {
       perPage: '10',
     });
     return this.http.get<{ data: Category[] }>(
-      `${environment.apiUrl}/api/v1/categories?${queryParams.toString}`
+      `${environment.apiUrl}/api/v1/categories?${queryParams.toString()}`
     );
   }
 }

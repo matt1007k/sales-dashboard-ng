@@ -1,4 +1,10 @@
-import { Component, inject } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  ElementRef,
+  inject,
+  viewChild,
+} from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -16,6 +22,10 @@ import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../../layout/component/app.floatingconfigurator';
 import { AuthService } from '../../../service/auth';
 import { JsonPipe, NgClass } from '@angular/common';
+import { ToastModule } from 'primeng/toast';
+import { catchError, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-login',
@@ -31,8 +41,10 @@ import { JsonPipe, NgClass } from '@angular/common';
     AppFloatingConfigurator,
     ReactiveFormsModule,
     NgClass,
+    ToastModule,
   ],
   template: `
+    <p-toast />
     <app-floating-configurator />
     <div
       class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden"
@@ -98,6 +110,7 @@ import { JsonPipe, NgClass } from '@angular/common';
                 >
 
                 <input
+                  #inputEmail
                   pInputText
                   id="email1"
                   type="text"
@@ -105,19 +118,23 @@ import { JsonPipe, NgClass } from '@angular/common';
                   class="w-full md:w-[30rem] border"
                   formControlName="email"
                   [ngClass]="{
-                    'ng-invalid':
+                    'ng-invalid ng-dirty':
                       (form.get('email')?.touched ||
                         form.get('email')?.dirty) &&
-                      form.get('email')?.invalid
+                      form.get('email')?.invalid,
                   }"
                 />
-                @if((form.get('email')?.touched || form.get('email')?.dirty) &&
-                form.get('email')?.invalid) {
-                @if(form.get('email')?.hasError('required')) {
-                <div class="text-red-500">Email is required.</div>
-                } @if(form.get('email')?.hasError('email')) {
-                <div class="text-red-500">Email is invalid.</div>
-                } }
+                @if (
+                  (form.get('email')?.touched || form.get('email')?.dirty) &&
+                  form.get('email')?.invalid
+                ) {
+                  @if (form.get('email')?.hasError('required')) {
+                    <div class="text-red-500">Email is required.</div>
+                  }
+                  @if (form.get('email')?.hasError('email')) {
+                    <div class="text-red-500">Email is invalid.</div>
+                  }
+                }
               </div>
               <div class="mb-8">
                 <label
@@ -134,23 +151,32 @@ import { JsonPipe, NgClass } from '@angular/common';
                   [fluid]="true"
                   [feedback]="false"
                   [ngClass]="{
-                    'p-invalid':
+                    'ng-invalid ng-dirty':
                       (form.get('password')?.touched ||
                         form.get('password')?.dirty) &&
-                      form.get('password')?.invalid
+                      form.get('password')?.invalid,
                   }"
                 ></p-password>
-                @if((form.get('password')?.touched ||
-                form.get('password')?.dirty) && form.get('password')?.invalid) {
-                @if(form.get('password')?.hasError('required')) {
-                <div class="text-red-500">Password is required.</div>
-                } @if(form.get('password')?.hasError('minLength')) {
-                <div class="text-red-500">
-                  Password must be at least
-                  {{ form.get('password')?.errors?.['minlength']['requiredLength'] }}
-                  characters.
-                </div>
-                } }
+                @if (
+                  (form.get('password')?.touched ||
+                    form.get('password')?.dirty) &&
+                  form.get('password')?.invalid
+                ) {
+                  @if (form.get('password')?.hasError('required')) {
+                    <div class="text-red-500">Password is required.</div>
+                  }
+                  @if (form.get('password')?.hasError('minLength')) {
+                    <div class="text-red-500">
+                      Password must be at least
+                      {{
+                        form.get('password')?.errors?.['minlength'][
+                          'requiredLength'
+                        ]
+                      }}
+                      characters.
+                    </div>
+                  }
+                }
               </div>
 
               <div class="flex items-center justify-between mt-2 mb-8 gap-8">
@@ -182,11 +208,15 @@ import { JsonPipe, NgClass } from '@angular/common';
   `,
 })
 export class Login {
-  authService = inject(AuthService);
+  // inputRef = viewChild.required<ElementRef<HTMLInputElement>>('inputEmail');
+
+  private authService = inject(AuthService);
+  private message = inject(MessageService);
   private router = inject(Router);
 
   form: FormGroup;
   constructor() {
+    // afterNextRender({ write: () => this.inputRef().nativeElement.focus() });
     this.form = new FormGroup({
       email: new FormControl('', [Validators.required, Validators.email]),
       password: new FormControl('', [
@@ -198,9 +228,23 @@ export class Login {
   }
 
   onSubmit() {
-    this.authService.login(this.form.value).subscribe((res) => {
-      console.log(res);
-      this.router.navigate(['/']);
-    });
+    this.authService
+      .login(this.form.value)
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 400 && 'message' in error.error) {
+            this.message.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: error.error.message,
+            });
+          }
+          return throwError(() => error);
+        }),
+      )
+      .subscribe((res) => {
+        console.log(res);
+        this.router.navigate(['/']);
+      });
   }
 }

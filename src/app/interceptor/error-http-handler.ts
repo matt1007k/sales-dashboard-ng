@@ -17,20 +17,14 @@ export class ErrorHttpHandlerInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler) {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        console.log('ErrorHttpHandlerInterceptor');
+        // console.log('ErrorHttpHandlerInterceptor');
 
-        if (error.status === 400) {
-          window.alert(error.error.message);
-        }
+        // if (error.status === 400) {
+        //   window.alert(error.error.message);
+        // }
         if (error.status === 401) {
           this.router.navigate(['/auth/login']);
         }
-
-        // this.notificationService.show({
-        //   severity: 'error',
-        //   summary: 'Error',
-        //   detail: error.error.message,
-        // });
         return throwError(() => error);
       })
     );
